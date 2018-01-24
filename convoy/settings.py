@@ -113,6 +113,9 @@ _VM_TCP_NO_TUNE = frozenset((
     'standard_b4ms', 'standard_b8ms',
 ))
 _SINGULARITY_COMMANDS = frozenset(('exec', 'run'))
+_FORBIDDEN_MERGE_TASK_PROPERTIES = frozenset((
+    'depends_on', 'depends_on_range', 'multi_instance', 'task_factory'
+))
 # named tuples
 PoolVmCountSettings = collections.namedtuple(
     'PoolVmCountSettings', [
@@ -2620,6 +2623,35 @@ def job_allow_run_on_missing(conf):
     except KeyError:
         allow = False
     return allow
+
+
+def job_has_merge_task(conf):
+    # type: (dict) -> bool
+    """Determines if job has a merge task
+    :param dict conf: job configuration object
+    :rtype: bool
+    :return: job has merge task
+    """
+    try:
+        merge = conf['merge_task']
+    except KeyError:
+        return False
+    else:
+        if any(x in merge for x in _FORBIDDEN_MERGE_TASK_PROPERTIES):
+            raise ValueError(
+                'merge_task has one or more forbidden properties: {}'.format(
+                    _FORBIDDEN_MERGE_TASK_PROPERTIES))
+    return True
+
+
+def job_merge_task(conf):
+    # type: (dict) -> dict
+    """Gets merge task
+    :param dict conf: job configuration object
+    :rtype: dict
+    :return: merge task
+    """
+    return conf['merge_task']
 
 
 def has_depends_on_task(conf):
